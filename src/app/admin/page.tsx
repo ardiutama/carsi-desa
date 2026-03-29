@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { BookingStatus, StoredBooking } from "@/lib/booking";
 import { bookingStatuses } from "@/lib/booking";
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { formatRupiah } from "@/lib/pricing";
 
 type BookingsListResponse = {
   bookings?: StoredBooking[];
@@ -275,6 +276,11 @@ export default function AdminPage() {
                           <p className="mt-1 text-xs text-dim">
                             {booking.id} | {booking.mobil} | {booking.durasi}
                           </p>
+                          <p className="mt-2 text-sm font-semibold text-sky-100">
+                            {booking.priceBreakdown
+                              ? formatRupiah(booking.priceBreakdown.total)
+                              : "Kalkulasi belum tersedia"}
+                          </p>
                         </div>
                         <span className={`rounded-full px-3 py-1 text-[11px] ${statusClasses[booking.status]}`}>
                           {statusLabels[booking.status]}
@@ -323,6 +329,11 @@ export default function AdminPage() {
                       <p className="mt-2 text-sm text-soft">
                         {selectedBooking.whatsapp} | {formatDateTime(selectedBooking.createdAt)}
                       </p>
+                      {selectedBooking.priceBreakdown ? (
+                        <p className="mt-3 text-lg font-black text-sky-100">
+                          {formatRupiah(selectedBooking.priceBreakdown.total)}
+                        </p>
+                      ) : null}
                     </div>
                     <span className={`rounded-full px-3 py-1.5 text-xs ${statusClasses[selectedBooking.status]}`}>
                       {statusLabels[selectedBooking.status]}
@@ -337,7 +348,73 @@ export default function AdminPage() {
                   <DetailCard label="Jam" value={selectedBooking.jam} />
                   <DetailCard label="Mobil" value={selectedBooking.mobil} />
                   <DetailCard label="Durasi" value={selectedBooking.durasi} />
+                  <DetailCard
+                    label="Jarak Tempuh"
+                    value={
+                      selectedBooking.jarakKm
+                        ? `${selectedBooking.jarakKm} km`
+                        : "Belum tersedia"
+                    }
+                  />
+                  <DetailCard
+                    label="Estimasi Waktu"
+                    value={
+                      selectedBooking.estimasiMenit
+                        ? `${selectedBooking.estimasiMenit} menit`
+                        : "Belum tersedia"
+                    }
+                  />
+                  <DetailCard
+                    label="Surge Pricing"
+                    value={`${selectedBooking.surgeMultiplier?.toFixed?.(1) ?? "1.0"}x`}
+                  />
                 </div>
+
+                {selectedBooking.priceBreakdown ? (
+                  <div className="rounded-[24px] border border-sky-300/12 bg-sky-400/10 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-white">Kalkulasi Harga Sewa</p>
+                        <p className="mt-1 text-xs text-slate-300">
+                          Breakdown otomatis yang tersimpan bersama booking
+                        </p>
+                      </div>
+                      <p className="text-lg font-black text-sky-100">
+                        {formatRupiah(selectedBooking.priceBreakdown.total)}
+                      </p>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      <DetailCard
+                        label="Tarif Dasar"
+                        value={formatRupiah(selectedBooking.priceBreakdown.baseFare)}
+                      />
+                      <DetailCard
+                        label="Biaya Jarak"
+                        value={formatRupiah(selectedBooking.priceBreakdown.distanceCost)}
+                      />
+                      <DetailCard
+                        label="Biaya Waktu"
+                        value={formatRupiah(selectedBooking.priceBreakdown.timeCost)}
+                      />
+                      <DetailCard
+                        label="Subtotal"
+                        value={formatRupiah(selectedBooking.priceBreakdown.subtotal)}
+                      />
+                      <DetailCard
+                        label="Kenaikan Surge"
+                        value={formatRupiah(selectedBooking.priceBreakdown.surgeAmount)}
+                      />
+                      <DetailCard
+                        label="Minimum Fare"
+                        value={
+                          selectedBooking.priceBreakdown.minimumApplied
+                            ? `${formatRupiah(selectedBooking.priceBreakdown.minimumFare)} dipakai`
+                            : formatRupiah(selectedBooking.priceBreakdown.minimumFare)
+                        }
+                      />
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
                   <p className="text-sm font-semibold text-white">Ubah Status Booking</p>

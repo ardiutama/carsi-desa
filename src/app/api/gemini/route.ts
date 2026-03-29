@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { normalizeBookingInput, validateBooking } from "@/lib/booking";
+import { calculateRentalPrice } from "@/lib/pricing";
 import { generateBookingSummary } from "@/lib/server/gemini";
 
 export async function POST(request: NextRequest) {
@@ -13,7 +14,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const geminiResult = await generateBookingSummary(booking);
+    const priceBreakdown = calculateRentalPrice(booking);
+    const geminiResult = await generateBookingSummary(booking, priceBreakdown);
 
     if (!geminiResult.result) {
       return NextResponse.json(
@@ -28,6 +30,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       result: geminiResult.result,
       model: geminiResult.model,
+      priceBreakdown,
     });
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Unknown error";

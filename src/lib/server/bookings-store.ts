@@ -3,7 +3,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { BookingPayload, BookingStatus, StoredBooking } from "@/lib/booking";
+import {
+  BookingPayload,
+  BookingStatus,
+  PriceBreakdown,
+  StoredBooking,
+  cleanNumber,
+} from "@/lib/booking";
 
 function resolveStorePath() {
   const isServerlessRuntime =
@@ -49,7 +55,7 @@ async function readBookings(): Promise<StoredBooking[]> {
   try {
     const content = await readFile(dataFile, "utf8");
     const parsed = JSON.parse(content) as StoredBooking[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeStoredBooking) : [];
   } catch {
     return [];
   }
@@ -66,10 +72,49 @@ function createBookingId() {
   return `CRS-${date}-${randomUUID().slice(0, 6).toUpperCase()}`;
 }
 
+function normalizePriceBreakdown(value: unknown): PriceBreakdown | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const raw = value as Partial<PriceBreakdown>;
+
+  if (typeof raw.total !== "number") {
+    return null;
+  }
+
+  return {
+    baseFare: cleanNumber(raw.baseFare),
+    distanceRate: cleanNumber(raw.distanceRate),
+    distanceKm: cleanNumber(raw.distanceKm),
+    distanceCost: cleanNumber(raw.distanceCost),
+    timeRate: cleanNumber(raw.timeRate),
+    timeMinutes: cleanNumber(raw.timeMinutes),
+    timeCost: cleanNumber(raw.timeCost),
+    surgeMultiplier: cleanNumber(raw.surgeMultiplier, 1),
+    surgeAmount: cleanNumber(raw.surgeAmount),
+    subtotal: cleanNumber(raw.subtotal),
+    minimumFare: cleanNumber(raw.minimumFare),
+    minimumApplied: Boolean(raw.minimumApplied),
+    total: cleanNumber(raw.total),
+  };
+}
+
+function normalizeStoredBooking(booking: StoredBooking): StoredBooking {
+  return {
+    ...booking,
+    jarakKm: cleanNumber(booking.jarakKm),
+    estimasiMenit: cleanNumber(booking.estimasiMenit),
+    surgeMultiplier: cleanNumber(booking.surgeMultiplier, 1),
+    priceBreakdown: normalizePriceBreakdown(booking.priceBreakdown),
+  };
+}
+
 export async function saveBooking(
   booking: BookingPayload,
   aiSummary: string,
   aiModel: string,
+  priceBreakdown: PriceBreakdown,
 ): Promise<StoredBooking> {
   const bookings = await readBookings();
   const record: StoredBooking = {
@@ -79,6 +124,7 @@ export async function saveBooking(
     aiSummary,
     aiModel,
     createdAt: new Date().toISOString(),
+    priceBreakdown,
   };
 
   const updatedBookings = [record, ...bookings];

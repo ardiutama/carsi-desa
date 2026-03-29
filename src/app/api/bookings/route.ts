@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { normalizeBookingInput, validateBooking } from "@/lib/booking";
+import { calculateRentalPrice } from "@/lib/pricing";
 import { getAllBookings, getRecentBookings, saveBooking } from "@/lib/server/bookings-store";
 import { generateBookingSummary } from "@/lib/server/gemini";
 
@@ -44,7 +45,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const geminiResult = await generateBookingSummary(booking);
+    const priceBreakdown = calculateRentalPrice(booking);
+    const geminiResult = await generateBookingSummary(booking, priceBreakdown);
 
     if (!geminiResult.result || !geminiResult.model) {
       return NextResponse.json(
@@ -56,7 +58,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const storedBooking = await saveBooking(booking, geminiResult.result, geminiResult.model);
+    const storedBooking = await saveBooking(
+      booking,
+      geminiResult.result,
+      geminiResult.model,
+      priceBreakdown,
+    );
     const bookings = await getRecentBookings();
 
     return NextResponse.json(

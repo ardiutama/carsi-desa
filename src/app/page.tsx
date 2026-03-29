@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { StoredBooking } from "@/lib/booking";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { formatRupiah, surgeOptions } from "@/lib/pricing";
 
 type BookingForm = {
   nama: string;
@@ -14,6 +15,9 @@ type BookingForm = {
   durasi: string;
   mobil: string;
   catatan: string;
+  jarakKm: string;
+  estimasiMenit: string;
+  surgeMultiplier: string;
 };
 
 type BookingResponse = {
@@ -37,6 +41,9 @@ const initialForm: BookingForm = {
   durasi: "",
   mobil: "Avanza",
   catatan: "",
+  jarakKm: "",
+  estimasiMenit: "",
+  surgeMultiplier: "1",
 };
 
 const mobilOptions = ["Avanza", "Xenia", "Innova", "Hiace", "Pickup", "Lainnya"];
@@ -83,7 +90,10 @@ export default function Home() {
         form.tanggal &&
         form.jam &&
         form.durasi &&
-        form.mobil,
+        form.mobil &&
+        form.jarakKm &&
+        form.estimasiMenit &&
+        form.surgeMultiplier,
     );
   }, [form]);
 
@@ -253,6 +263,11 @@ export default function Home() {
                     <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-300">
                       <span>{booking ? booking.mobil : "Avanza"}</span>
                       <span>{booking ? booking.durasi : "1 hari"}</span>
+                      <span>
+                        {booking?.priceBreakdown
+                          ? formatRupiah(booking.priceBreakdown.total)
+                          : "Tarif otomatis"}
+                      </span>
                       <span>{booking ? formatBookingTime(booking.createdAt) : "Realtime"}</span>
                     </div>
                   </div>
@@ -272,6 +287,11 @@ export default function Home() {
               <span className="neon-pill rounded-full px-4 py-2 text-sm text-slate-300">
                 Booking + AI + Save
               </span>
+            </div>
+
+            <div className="mb-5 rounded-[22px] border border-sky-300/10 bg-sky-400/10 px-4 py-3 text-sm text-sky-100">
+              Rumus demo: tarif dasar {formatRupiah(10000)} + {formatRupiah(3500)}/km +{" "}
+              {formatRupiah(500)}/menit, minimum {formatRupiah(20000)}, surge hingga 2.0x.
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -317,6 +337,24 @@ export default function Home() {
                 onChange={(value) => setForm((prev) => ({ ...prev, durasi: value }))}
                 placeholder="12 jam / 2 hari"
               />
+              <InputField
+                label="Jarak Tempuh (km)"
+                type="number"
+                value={form.jarakKm}
+                onChange={(value) => setForm((prev) => ({ ...prev, jarakKm: value }))}
+                placeholder="Contoh: 25"
+                min="0"
+                step="0.1"
+              />
+              <InputField
+                label="Estimasi Waktu (menit)"
+                type="number"
+                value={form.estimasiMenit}
+                onChange={(value) => setForm((prev) => ({ ...prev, estimasiMenit: value }))}
+                placeholder="Contoh: 45"
+                min="0"
+                step="1"
+              />
 
               <label className="flex flex-col gap-2 text-sm text-slate-200">
                 Jenis Mobil
@@ -328,6 +366,23 @@ export default function Home() {
                   {mobilOptions.map((option) => (
                     <option key={option} value={option}>
                       {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="flex flex-col gap-2 text-sm text-slate-200">
+                Surge Pricing
+                <select
+                  value={form.surgeMultiplier}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, surgeMultiplier: event.target.value }))
+                  }
+                  className="neon-input h-12 rounded-2xl px-4 text-sm"
+                >
+                  {surgeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
                     </option>
                   ))}
                 </select>
@@ -391,7 +446,16 @@ export default function Home() {
                   <p className="font-semibold">Booking berhasil disimpan</p>
                   <p className="mt-1">Kode: {savedBooking.id}</p>
                   <p>Status: {savedBooking.status}</p>
+                  {savedBooking.priceBreakdown ? (
+                    <p className="mt-1">
+                      Estimasi harga: {formatRupiah(savedBooking.priceBreakdown.total)}
+                    </p>
+                  ) : null}
                 </div>
+              ) : null}
+
+              {savedBooking?.priceBreakdown ? (
+                <PriceBreakdownCard booking={savedBooking} />
               ) : null}
 
               <div className="min-h-[320px] rounded-[24px] border border-white/8 bg-[#090d18]/82 p-4">
@@ -464,6 +528,11 @@ export default function Home() {
                       <p className="mt-2 text-sm text-soft">
                         {booking.lokasiJemput} ke {booking.tujuan}
                       </p>
+                      <p className="mt-2 text-sm font-semibold text-sky-100">
+                        {booking.priceBreakdown
+                          ? formatRupiah(booking.priceBreakdown.total)
+                          : "Kalkulasi belum tersedia"}
+                      </p>
                       <p className="mt-2 text-xs text-dim">
                         {booking.id} | {formatBookingTime(booking.createdAt)}
                       </p>
@@ -493,7 +562,9 @@ type InputFieldProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  type?: "text" | "date" | "time";
+  type?: "text" | "date" | "time" | "number";
+  step?: string;
+  min?: string;
 };
 
 function InputField({
@@ -502,6 +573,8 @@ function InputField({
   onChange,
   placeholder,
   type = "text",
+  step,
+  min,
 }: InputFieldProps) {
   return (
     <label className="flex flex-col gap-2 text-sm text-slate-200">
@@ -512,7 +585,73 @@ function InputField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className="neon-input h-12 rounded-2xl px-4 text-sm"
+        step={step}
+        min={min}
       />
     </label>
+  );
+}
+
+function PriceBreakdownCard({ booking }: { booking: StoredBooking }) {
+  if (!booking.priceBreakdown) {
+    return null;
+  }
+
+  const pricing = booking.priceBreakdown;
+
+  return (
+    <div className="mb-4 rounded-[24px] border border-sky-300/12 bg-sky-400/10 p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-white">Kalkulasi Harga Sewa</p>
+          <p className="mt-1 text-xs text-slate-300">
+            Estimasi sistem sebelum dikirim ke pelanggan
+          </p>
+        </div>
+        <p className="text-lg font-black text-sky-100">{formatRupiah(pricing.total)}</p>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <PriceLine label="Tarif dasar" value={formatRupiah(pricing.baseFare)} />
+        <PriceLine
+          label={`Jarak (${pricing.distanceKm} km)`}
+          value={formatRupiah(pricing.distanceCost)}
+        />
+        <PriceLine
+          label={`Waktu (${pricing.timeMinutes} menit)`}
+          value={formatRupiah(pricing.timeCost)}
+        />
+        <PriceLine label="Subtotal" value={formatRupiah(pricing.subtotal)} />
+        <PriceLine label="Surge" value={`${pricing.surgeMultiplier.toFixed(1)}x`} />
+        <PriceLine label="Kenaikan surge" value={formatRupiah(pricing.surgeAmount)} />
+        <PriceLine
+          label="Minimum fare"
+          value={
+            pricing.minimumApplied
+              ? `${formatRupiah(pricing.minimumFare)} dipakai`
+              : formatRupiah(pricing.minimumFare)
+          }
+        />
+        <PriceLine label="Total akhir" value={formatRupiah(pricing.total)} highlight />
+      </div>
+    </div>
+  );
+}
+
+function PriceLine({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-dim">{label}</p>
+      <p className={`mt-2 text-sm font-semibold ${highlight ? "text-sky-100" : "text-white"}`}>
+        {value}
+      </p>
+    </div>
   );
 }
