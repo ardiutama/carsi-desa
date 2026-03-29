@@ -428,7 +428,7 @@ export default function Home() {
               id="form-booking"
               className="order-1 soft-panel-strong rounded-[30px] p-5 xl:sticky xl:top-5"
             >
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.22em] text-[#7b8fa6]">
                     Input Area
@@ -441,7 +441,7 @@ export default function Home() {
                     alurnya terasa lebih natural.
                   </p>
                 </div>
-                <span className="soft-chip rounded-2xl px-3 py-2 text-xs font-semibold">
+                <span className="soft-chip inline-flex self-start rounded-2xl px-3 py-2 text-xs font-semibold">
                   Booking + AI
                 </span>
               </div>
@@ -495,14 +495,14 @@ export default function Home() {
                       onChange={(value) => setForm((prev) => ({ ...prev, durasi: value }))}
                       placeholder="12 jam / 1 hari"
                     />
-                    <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
                       Jenis Mobil
                       <select
                         value={form.mobil}
                         onChange={(event) =>
                           setForm((prev) => ({ ...prev, mobil: event.target.value }))
                         }
-                        className="soft-input h-12 rounded-2xl px-4 text-sm"
+                        className="soft-input h-12 w-full rounded-2xl px-4 text-sm"
                       >
                         {mobilOptions.map((option) => (
                           <option key={option} value={option}>
@@ -536,14 +536,14 @@ export default function Home() {
                     />
                   </div>
 
-                  <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                  <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
                     Surge Pricing
                     <select
                       value={form.surgeMultiplier}
                       onChange={(event) =>
                         setForm((prev) => ({ ...prev, surgeMultiplier: event.target.value }))
                       }
-                      className="soft-input h-12 rounded-2xl px-4 text-sm"
+                      className="soft-input h-12 w-full rounded-2xl px-4 text-sm"
                     >
                       {surgeOptions.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -553,14 +553,14 @@ export default function Home() {
                     </select>
                   </label>
 
-                  <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                  <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
                     Catatan Tambahan
                     <textarea
                       value={form.catatan}
                       onChange={(event) => setForm((prev) => ({ ...prev, catatan: event.target.value }))}
                       rows={4}
                       placeholder="Jumlah penumpang, barang bawaan, kebutuhan khusus"
-                      className="soft-input rounded-2xl px-4 py-3 text-sm"
+                      className="soft-input w-full rounded-2xl px-4 py-3 text-sm"
                     />
                   </label>
                 </div>
@@ -1022,16 +1022,16 @@ function InputField({
   };
 
   return (
-    <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
       {label}
-      <div className="relative">
+      <div className="relative min-w-0">
         <input
           ref={inputRef}
           type={type}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className={`soft-input h-12 rounded-2xl px-4 text-sm ${
+          className={`soft-input h-12 w-full rounded-2xl px-4 text-sm ${
             hasPickerButton ? "has-picker pr-14" : ""
           }`}
           step={step}
