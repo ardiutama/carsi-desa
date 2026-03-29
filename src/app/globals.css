@@ -236,6 +236,16 @@ textarea {
   color-scheme: light;
 }
 
+.soft-input.has-picker[type="date"]::-webkit-calendar-picker-indicator,
+.soft-input.has-picker[type="time"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 56px;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
 .soft-input[type="date"]::-webkit-calendar-picker-indicator,
 .soft-input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
@@ -254,6 +264,13 @@ textarea {
   box-shadow:
     0 0 0 4px rgba(112, 160, 219, 0.14),
     0 10px 20px rgba(112, 160, 219, 0.08);
+}
+
+.picker-trigger:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(112, 160, 219, 0.18),
+    0 10px 20px rgba(112, 160, 219, 0.12);
 }
 
 .soft-dark-button {

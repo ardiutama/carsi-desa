@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { StoredBooking } from "@/lib/booking";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   calculateRentalPrice,
   formatRupiah,
@@ -959,19 +959,81 @@ function InputField({
   step,
   min,
 }: InputFieldProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hasPickerButton = type === "date" || type === "time";
+
+  const openPicker = () => {
+    const input = inputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+
+    if ("showPicker" in input && typeof input.showPicker === "function") {
+      try {
+        input.showPicker();
+        return;
+      } catch {
+        // Fall back to click for browsers that block showPicker.
+      }
+    }
+
+    input.click();
+  };
+
   return (
     <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
       {label}
-      <input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="soft-input h-12 rounded-2xl px-4 text-sm"
-        step={step}
-        min={min}
-      />
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className={`soft-input h-12 rounded-2xl px-4 text-sm ${
+            hasPickerButton ? "has-picker pr-14" : ""
+          }`}
+          step={step}
+          min={min}
+        />
+        {hasPickerButton ? (
+          <button
+            type="button"
+            onClick={openPicker}
+            aria-label={
+              type === "date"
+                ? `Buka kalender untuk ${label}`
+                : `Buka pilihan waktu untuk ${label}`
+            }
+            className="picker-trigger absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl border border-[#cbd9ea] bg-white text-[#1d2a3d] shadow-[0_8px_18px_rgba(118,146,181,0.16)] transition hover:border-[#a9c3e0] hover:bg-[#f8fbff]"
+          >
+            {type === "date" ? <CalendarGlyph /> : <ClockGlyph />}
+          </button>
+        ) : null}
+      </div>
     </label>
+  );
+}
+
+function CalendarGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+      <rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8 3.8v3.6M16 3.8v3.6M4 9.5h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8.5 13h2.5M13 13h2.5M8.5 16.5H11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ClockGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7.8v4.7l3.2 1.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
