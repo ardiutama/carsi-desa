@@ -15,8 +15,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Aptos", "Segoe UI", "Trebuchet MS", sans-serif;
-  --font-serif: "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-sans: var(--font-plus-jakarta), "Aptos", "Trebuchet MS", sans-serif;
+  --font-serif: var(--font-plus-jakarta), "Aptos", "Trebuchet MS", sans-serif;
 }
 
 * {
@@ -297,3 +297,4 @@ textarea {
   color: #2c3b4f;
   box-shadow: 0 8px 20px rgba(141, 162, 190, 0.12);
 }
+
