@@ -315,7 +315,7 @@ textarea {
 
 .car-stage::after {
   position: absolute;
-  inset: auto 12% 18%;
+  inset: auto 7% 16%;
   height: 1px;
   content: "";
   background: linear-gradient(90deg, transparent, rgba(124, 145, 171, 0.38), transparent);
