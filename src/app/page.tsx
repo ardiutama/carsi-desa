@@ -3,7 +3,12 @@
 import Link from "next/link";
 import type { StoredBooking } from "@/lib/booking";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { formatRupiah, surgeOptions } from "@/lib/pricing";
+import {
+  calculateRentalPrice,
+  formatRupiah,
+  pricingConfig,
+  surgeOptions,
+} from "@/lib/pricing";
 
 type BookingForm = {
   nama: string;
@@ -57,18 +62,18 @@ function formatBookingTime(value: string) {
 
 function statusTone(status: string) {
   if (status === "selesai") {
-    return "bg-emerald-400/14 text-emerald-100 border border-emerald-300/16";
+    return "bg-emerald-100 text-emerald-700 border border-emerald-200";
   }
 
   if (status === "diproses") {
-    return "bg-amber-400/14 text-amber-100 border border-amber-300/16";
+    return "bg-amber-100 text-amber-700 border border-amber-200";
   }
 
   if (status === "batal") {
-    return "bg-rose-400/14 text-rose-100 border border-rose-300/16";
+    return "bg-rose-100 text-rose-700 border border-rose-200";
   }
 
-  return "bg-sky-400/14 text-sky-100 border border-sky-300/16";
+  return "bg-sky-100 text-sky-700 border border-sky-200";
 }
 
 export default function Home() {
@@ -105,6 +110,22 @@ export default function Home() {
       selesai: recentBookings.filter((booking) => booking.status === "selesai").length,
     };
   }, [recentBookings]);
+
+  const liveEstimate = useMemo(() => {
+    const distance = Number.parseFloat(form.jarakKm.replace(",", "."));
+    const minutes = Number.parseFloat(form.estimasiMenit.replace(",", "."));
+    const surge = Number.parseFloat(form.surgeMultiplier.replace(",", "."));
+
+    if (!Number.isFinite(distance) || !Number.isFinite(minutes) || distance <= 0 || minutes <= 0) {
+      return null;
+    }
+
+    return calculateRentalPrice({
+      jarakKm: distance,
+      estimasiMenit: minutes,
+      surgeMultiplier: Number.isFinite(surge) && surge >= 1 ? surge : 1,
+    });
+  }, [form.estimasiMenit, form.jarakKm, form.surgeMultiplier]);
 
   useEffect(() => {
     let isActive = true;
@@ -177,382 +198,727 @@ export default function Home() {
     window.setTimeout(() => setIsCopied(false), 1500);
   };
 
+  const featuredPrice = savedBooking?.priceBreakdown ?? liveEstimate;
+  const recentPreview = recentBookings.slice(0, 3);
+
   return (
-    <div className="min-h-screen px-3 py-3 md:px-6 md:py-6">
-      <div className="dashboard-shell mx-auto max-w-7xl rounded-[32px] p-3 md:p-5">
-        <div className="pointer-events-none absolute left-0 top-0 h-80 w-80 rounded-full bg-[#7b8dff]/16 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#4ecbff]/12 blur-3xl" />
-
-        <header className="glass-panel rounded-[26px] px-4 py-4 md:px-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.94),_transparent_24%),linear-gradient(180deg,_#edf4fb_0%,_#eef3fa_35%,_#f7f1f7_100%)] px-3 py-3 text-[#172433] md:px-6 md:py-6">
+      <div className="soft-dashboard mx-auto max-w-7xl rounded-[36px] p-4 md:p-6">
+        <header className="flex flex-col gap-4 rounded-[26px] px-1 py-1 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8fdcff,#dce7ff)] text-lg font-black text-white shadow-[0_10px_26px_rgba(123,167,214,0.24)]">
+              C
+            </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-sky-200">CARSI</p>
-              <h1 className="mt-2 text-3xl font-black text-white md:text-4xl">
-                Booking Mobil Dengan Sopir
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-soft">
-                Flow tetap sederhana untuk demo: isi data pelanggan, proses booking, lihat hasil
-                AI, lalu buka dashboard admin jika perlu.
-              </p>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7b8fa6]">CARSI</p>
+              <p className="text-2xl font-semibold tracking-[-0.04em] text-[#111827]">Car Booking</p>
             </div>
+          </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="neon-pill flex h-11 items-center gap-3 rounded-full px-4 text-sm text-slate-300">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-300" />
-                Backend booking aktif
-              </div>
-              <Link
-                href="/admin"
-                className="neon-button rounded-full px-5 py-2 text-sm font-bold text-white"
-              >
-                Dashboard Admin
-              </Link>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="#hero-booking"
+              className="soft-dark-button rounded-2xl px-4 py-2 text-sm font-semibold"
+            >
+              Rent
+            </a>
+            <a
+              href="#pricing-breakdown"
+              className="soft-ghost-button rounded-2xl px-4 py-2 text-sm font-medium"
+            >
+              Pricing
+            </a>
+            <a
+              href="#booking-history"
+              className="soft-ghost-button rounded-2xl px-4 py-2 text-sm font-medium"
+            >
+              History
+            </a>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="soft-ghost-button h-11 w-11 rounded-2xl text-sm font-semibold"
+            >
+              ○
+            </button>
+            <button
+              type="button"
+              className="soft-ghost-button h-11 w-11 rounded-2xl text-sm font-semibold"
+            >
+              ◇
+            </button>
+            <span className="location-pill rounded-2xl px-4 py-2 text-sm font-semibold">
+              Location: Sidemen
+            </span>
+            <Link
+              href="/admin"
+              className="soft-panel inline-flex h-11 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-[#111827]"
+            >
+              Admin
+            </Link>
           </div>
         </header>
 
-        <section className="mt-4 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="glass-panel-strong rounded-[30px] p-5">
-            <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
-              <div>
-                <p className="text-sm text-slate-300">Booking overview</p>
-                <h2 className="accent-text mt-2 text-4xl font-black md:text-5xl">
-                  Rental Mobil Pedesaan
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-soft">
-                  Tema visual mengikuti referensi dashboard premium, tetapi UX tetap sama:
-                  halaman ini berfokus pada pembuatan booking, hasil AI, dan bukti riwayat order.
-                </p>
-              </div>
-
-              <div className="rounded-[24px] border border-white/8 bg-[#090d18]/82 p-4">
-                <p className="text-xs uppercase tracking-[0.16em] text-dim">System Pulse</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <StatCard label="Total Booking" value={String(summary.total)} />
-                  <StatCard label="Baru" value={String(summary.baru)} />
-                  <StatCard label="Diproses" value={String(summary.diproses)} />
-                  <StatCard label="Selesai" value={String(summary.selesai)} />
+        <div className="mt-5 grid gap-5 xl:grid-cols-[360px_1fr]">
+          <aside className="space-y-5">
+            <section className="soft-panel rounded-[30px] p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-[#111827]">Tarif Aktif</p>
+                  <p className="mt-1 text-xs text-[#8093a8]">
+                    Engine harga otomatis untuk demo client
+                  </p>
+                </div>
+                <div className="soft-ghost-button flex h-11 w-11 items-center justify-center rounded-2xl text-sm">
+                  ⌕
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className="glass-panel rounded-[30px] p-5">
-            <p className="text-sm font-semibold text-white">Live Feed</p>
-            <p className="mt-1 text-xs text-dim">Booking terbaru yang tersimpan di backend</p>
-            <div className="mt-4 space-y-3">
-              {(recentBookings.length > 0 ? recentBookings.slice(0, 4) : [null, null, null]).map(
-                (booking, index) => (
+              <div className="flex flex-wrap gap-2">
+                <ConfigChip label={formatRupiah(pricingConfig.baseFare)} />
+                <ConfigChip label={`${formatRupiah(pricingConfig.distanceRate)}/km`} />
+                <ConfigChip label={`${formatRupiah(pricingConfig.timeRate)}/menit`} />
+                <ConfigChip label={`Min ${formatRupiah(pricingConfig.minimumFare)}`} />
+              </div>
+
+              <div className="mt-4 space-y-3">
+                <SidebarBookingCard
+                  title="Avanza Family"
+                  subtitle="Cocok untuk wisata desa dan antar kota"
+                  accent="from-[#e8f1ff] to-white"
+                />
+                <SidebarBookingCard
+                  title="Innova Comfort"
+                  subtitle="Lebih lega untuk penumpang dan bagasi"
+                  accent="from-[#edf7ff] to-white"
+                />
+                <SidebarBookingCard
+                  title="Hiace Group"
+                  subtitle="Ideal untuk rombongan kecil dan tamu"
+                  accent="from-[#fff1ef] to-white"
+                />
+              </div>
+            </section>
+
+            <form
+              id="form-booking"
+              onSubmit={handleSubmit}
+              className="soft-panel-strong rounded-[30px] p-5"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#7b8fa6]">
+                    Input Area
+                  </p>
+                  <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#111827]">
+                    Form Booking
+                  </h2>
+                </div>
+                <span className="soft-chip rounded-2xl px-3 py-2 text-xs font-semibold">
+                  Booking + AI
+                </span>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <InputField
+                  label="Nama Pelanggan"
+                  value={form.nama}
+                  onChange={(value) => setForm((prev) => ({ ...prev, nama: value }))}
+                  placeholder="Contoh: Pak Rahmat"
+                />
+                <InputField
+                  label="Nomor WhatsApp"
+                  value={form.whatsapp}
+                  onChange={(value) => setForm((prev) => ({ ...prev, whatsapp: value }))}
+                  placeholder="08xxxxxxxxxx"
+                />
+                <InputField
+                  label="Lokasi Jemput"
+                  value={form.lokasiJemput}
+                  onChange={(value) => setForm((prev) => ({ ...prev, lokasiJemput: value }))}
+                  placeholder="Sidemen"
+                />
+                <InputField
+                  label="Tujuan"
+                  value={form.tujuan}
+                  onChange={(value) => setForm((prev) => ({ ...prev, tujuan: value }))}
+                  placeholder="Denpasar / Ubud"
+                />
+                <InputField
+                  label="Tanggal"
+                  type="date"
+                  value={form.tanggal}
+                  onChange={(value) => setForm((prev) => ({ ...prev, tanggal: value }))}
+                />
+                <InputField
+                  label="Jam"
+                  type="time"
+                  value={form.jam}
+                  onChange={(value) => setForm((prev) => ({ ...prev, jam: value }))}
+                />
+                <InputField
+                  label="Durasi Sewa"
+                  value={form.durasi}
+                  onChange={(value) => setForm((prev) => ({ ...prev, durasi: value }))}
+                  placeholder="12 jam / 1 hari"
+                />
+                <InputField
+                  label="Jarak Tempuh (km)"
+                  type="number"
+                  value={form.jarakKm}
+                  onChange={(value) => setForm((prev) => ({ ...prev, jarakKm: value }))}
+                  placeholder="Contoh: 25"
+                  min="0"
+                  step="0.1"
+                />
+                <InputField
+                  label="Estimasi Waktu (menit)"
+                  type="number"
+                  value={form.estimasiMenit}
+                  onChange={(value) => setForm((prev) => ({ ...prev, estimasiMenit: value }))}
+                  placeholder="Contoh: 45"
+                  min="0"
+                  step="1"
+                />
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                  Jenis Mobil
+                  <select
+                    value={form.mobil}
+                    onChange={(event) => setForm((prev) => ({ ...prev, mobil: event.target.value }))}
+                    className="soft-input h-12 rounded-2xl px-4 text-sm"
+                  >
+                    {mobilOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                  Surge Pricing
+                  <select
+                    value={form.surgeMultiplier}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, surgeMultiplier: event.target.value }))
+                    }
+                    className="soft-input h-12 rounded-2xl px-4 text-sm"
+                  >
+                    {surgeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <label className="mt-3 flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                Catatan Tambahan
+                <textarea
+                  value={form.catatan}
+                  onChange={(event) => setForm((prev) => ({ ...prev, catatan: event.target.value }))}
+                  rows={4}
+                  placeholder="Jumlah penumpang, barang bawaan, kebutuhan khusus"
+                  className="soft-input rounded-2xl px-4 py-3 text-sm"
+                />
+              </label>
+
+              <div className="mt-4 flex flex-col gap-3">
+                <button
+                  type="submit"
+                  disabled={!canSubmit || isLoading}
+                  className="soft-dark-button inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      Menyimpan booking...
+                    </>
+                  ) : (
+                    "Proses Booking"
+                  )}
+                </button>
+                <Link
+                  href="/admin"
+                  className="soft-ghost-button inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold"
+                >
+                  Buka Admin
+                </Link>
+              </div>
+            </form>
+
+            <section className="soft-panel rounded-[30px] p-4">
+              <div className="mb-3">
+                <p className="text-sm font-semibold text-[#111827]">Recent Requests</p>
+                <p className="mt-1 text-xs text-[#8093a8]">Booking yang baru masuk ke sistem</p>
+              </div>
+
+              <div className="space-y-3">
+                {(recentPreview.length > 0 ? recentPreview : [null, null]).map((booking, index) => (
                   <div
-                    key={booking?.id ?? `live-${index}`}
-                    className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3"
+                    key={booking?.id ?? `preview-${index}`}
+                    className="rounded-[24px] border border-[#d6e3f2] bg-white/82 p-4 shadow-[0_12px_24px_rgba(144,169,196,0.08)]"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-white">
+                        <p className="truncate text-sm font-semibold text-[#111827]">
                           {booking ? booking.nama : "Belum ada booking"}
                         </p>
-                        <p className="truncate text-xs text-dim">
+                        <p className="mt-1 truncate text-xs text-[#8093a8]">
                           {booking ? `${booking.lokasiJemput} ke ${booking.tujuan}` : "Siap untuk demo"}
                         </p>
                       </div>
-                      <span className={`rounded-full px-3 py-1 text-[11px] ${statusTone(booking?.status ?? "baru")}`}>
+                      <span
+                        className={`rounded-full px-3 py-1 text-[11px] font-semibold ${statusTone(booking?.status ?? "baru")}`}
+                      >
                         {booking ? booking.status : "standby"}
                       </span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-300">
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#51657b]">
                       <span>{booking ? booking.mobil : "Avanza"}</span>
                       <span>{booking ? booking.durasi : "1 hari"}</span>
                       <span>
                         {booking?.priceBreakdown
                           ? formatRupiah(booking.priceBreakdown.total)
-                          : "Tarif otomatis"}
+                          : "Harga otomatis"}
                       </span>
-                      <span>{booking ? formatBookingTime(booking.createdAt) : "Realtime"}</span>
                     </div>
                   </div>
-                ),
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-4 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-          <form onSubmit={handleSubmit} className="glass-panel rounded-[30px] p-5 md:p-6">
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-sky-200">Input Area</p>
-                <h2 className="mt-2 text-3xl font-black text-white">Form Booking</h2>
+                ))}
               </div>
-              <span className="neon-pill rounded-full px-4 py-2 text-sm text-slate-300">
-                Booking + AI + Save
-              </span>
-            </div>
+            </section>
+          </aside>
 
-            <div className="mb-5 rounded-[22px] border border-sky-300/10 bg-sky-400/10 px-4 py-3 text-sm text-sky-100">
-              Rumus demo: tarif dasar {formatRupiah(10000)} + {formatRupiah(3500)}/km +{" "}
-              {formatRupiah(500)}/menit, minimum {formatRupiah(20000)}, surge hingga 2.0x.
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <InputField
-                label="Nama Pelanggan"
-                value={form.nama}
-                onChange={(value) => setForm((prev) => ({ ...prev, nama: value }))}
-                placeholder="Contoh: Pak Rahmat"
-              />
-              <InputField
-                label="Nomor WhatsApp"
-                value={form.whatsapp}
-                onChange={(value) => setForm((prev) => ({ ...prev, whatsapp: value }))}
-                placeholder="08xxxxxxxxxx"
-              />
-              <InputField
-                label="Lokasi Jemput"
-                value={form.lokasiJemput}
-                onChange={(value) => setForm((prev) => ({ ...prev, lokasiJemput: value }))}
-                placeholder="Desa / kecamatan"
-              />
-              <InputField
-                label="Tujuan"
-                value={form.tujuan}
-                onChange={(value) => setForm((prev) => ({ ...prev, tujuan: value }))}
-                placeholder="Kota / alamat tujuan"
-              />
-              <InputField
-                label="Tanggal"
-                type="date"
-                value={form.tanggal}
-                onChange={(value) => setForm((prev) => ({ ...prev, tanggal: value }))}
-              />
-              <InputField
-                label="Jam"
-                type="time"
-                value={form.jam}
-                onChange={(value) => setForm((prev) => ({ ...prev, jam: value }))}
-              />
-              <InputField
-                label="Durasi Sewa"
-                value={form.durasi}
-                onChange={(value) => setForm((prev) => ({ ...prev, durasi: value }))}
-                placeholder="12 jam / 2 hari"
-              />
-              <InputField
-                label="Jarak Tempuh (km)"
-                type="number"
-                value={form.jarakKm}
-                onChange={(value) => setForm((prev) => ({ ...prev, jarakKm: value }))}
-                placeholder="Contoh: 25"
-                min="0"
-                step="0.1"
-              />
-              <InputField
-                label="Estimasi Waktu (menit)"
-                type="number"
-                value={form.estimasiMenit}
-                onChange={(value) => setForm((prev) => ({ ...prev, estimasiMenit: value }))}
-                placeholder="Contoh: 45"
-                min="0"
-                step="1"
-              />
-
-              <label className="flex flex-col gap-2 text-sm text-slate-200">
-                Jenis Mobil
-                <select
-                  value={form.mobil}
-                  onChange={(event) => setForm((prev) => ({ ...prev, mobil: event.target.value }))}
-                  className="neon-input h-12 rounded-2xl px-4 text-sm"
-                >
-                  {mobilOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="flex flex-col gap-2 text-sm text-slate-200">
-                Surge Pricing
-                <select
-                  value={form.surgeMultiplier}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, surgeMultiplier: event.target.value }))
-                  }
-                  className="neon-input h-12 rounded-2xl px-4 text-sm"
-                >
-                  {surgeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <label className="mt-4 flex flex-col gap-2 text-sm text-slate-200">
-              Catatan Tambahan
-              <textarea
-                value={form.catatan}
-                onChange={(event) => setForm((prev) => ({ ...prev, catatan: event.target.value }))}
-                rows={4}
-                placeholder="Jumlah penumpang, barang bawaan, kebutuhan khusus"
-                className="neon-input rounded-2xl px-4 py-3 text-sm"
-              />
-            </label>
-
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="submit"
-                disabled={!canSubmit || isLoading}
-                className="neon-button inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                    Menyimpan booking...
-                  </>
-                ) : (
-                  "Proses Booking"
-                )}
-              </button>
-              <Link
-                href="/admin"
-                className="ghost-button inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold text-slate-200"
-              >
-                Buka Admin
-              </Link>
-            </div>
-          </form>
-
-          <div className="space-y-4">
-            <section className="glass-panel-strong rounded-[30px] p-5">
-              <div className="mb-4 flex items-start justify-between gap-4">
+          <main className="space-y-5">
+            <section id="hero-booking" className="soft-panel-strong rounded-[32px] p-5 md:p-6">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-sky-200">Result Display</p>
-                  <h2 className="mt-2 text-3xl font-black text-white">Hasil AI Booking</h2>
+                  <p className="text-sm font-medium text-[#6d839b]">Cars that were viewed</p>
+                  <h1 className="mt-2 max-w-3xl text-4xl font-semibold tracking-[-0.06em] text-[#111827] md:text-5xl">
+                    Rental Mobil Sidemen-by indovma
+                  </h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-[#5f7388]">
+                    Tampilan baru mengikuti nuansa referensi: airy, modern, premium, dan ringan.
+                    Booking flow tetap sama, hanya visualnya yang sekarang terasa lebih polished
+                    untuk presentasi client.
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={copyResult}
-                  disabled={!result || isLoading}
-                  className="ghost-button rounded-full px-4 py-2 text-sm font-semibold text-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isCopied ? "Copied" : "Copy Result"}
-                </button>
+
+                <div className="flex flex-wrap gap-2">
+                  <span className="soft-chip rounded-2xl px-3 py-2 text-xs font-semibold">
+                    Driver Included
+                  </span>
+                  <span className="soft-chip rounded-2xl px-3 py-2 text-xs font-semibold">
+                    Auto Pricing
+                  </span>
+                  <span className="location-pill rounded-2xl px-3 py-2 text-xs font-semibold">
+                    Sidemen Base
+                  </span>
+                </div>
               </div>
 
-              {savedBooking ? (
-                <div className="mb-4 rounded-[22px] border border-emerald-300/14 bg-emerald-400/10 p-4 text-sm text-emerald-100">
-                  <p className="font-semibold">Booking berhasil disimpan</p>
-                  <p className="mt-1">Kode: {savedBooking.id}</p>
-                  <p>Status: {savedBooking.status}</p>
-                  {savedBooking.priceBreakdown ? (
-                    <p className="mt-1">
-                      Estimasi harga: {formatRupiah(savedBooking.priceBreakdown.total)}
-                    </p>
-                  ) : null}
+              <div className="mt-5 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+                <div className="car-stage rounded-[30px] p-5 md:p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-3xl font-semibold tracking-[-0.05em] text-[#111827]">
+                        {form.mobil || "Avanza"}
+                      </p>
+                      <p className="mt-1 text-sm text-[#6f8196]">
+                        Pilihan rute: {form.lokasiJemput || "Sidemen"} ke {form.tujuan || "Tujuan Anda"}
+                      </p>
+                    </div>
+                    <div className="soft-ghost-button flex h-11 w-11 items-center justify-center rounded-2xl text-lg">
+                      ⋯
+                    </div>
+                  </div>
+
+                  <div className="relative mt-6">
+                    <div className="absolute left-2 top-10 car-tag rounded-2xl px-3 py-2 text-xs font-semibold">
+                      Driver On Duty
+                    </div>
+                    <div className="absolute bottom-5 right-2 car-tag rounded-2xl px-3 py-2 text-xs font-semibold">
+                      Smooth Ride
+                    </div>
+                    <CarShowcase />
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-3 gap-3">
+                    <MetricCard
+                      label="Jarak"
+                      value={liveEstimate ? `${liveEstimate.distanceKm} km` : "0 km"}
+                    />
+                    <MetricCard
+                      label="Durasi"
+                      value={liveEstimate ? `${liveEstimate.timeMinutes} min` : "0 min"}
+                    />
+                    <MetricCard
+                      label="Total"
+                      value={featuredPrice ? formatRupiah(featuredPrice.total) : formatRupiah(0)}
+                      highlight
+                    />
+                  </div>
                 </div>
-              ) : null}
 
-              {savedBooking?.priceBreakdown ? (
-                <PriceBreakdownCard booking={savedBooking} />
-              ) : null}
+                <div className="space-y-4">
+                  <section className="soft-panel rounded-[28px] p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[#111827]">Estimation Engine</p>
+                        <p className="mt-1 text-xs text-[#8093a8]">
+                          Snapshot tarif yang sedang aktif
+                        </p>
+                      </div>
+                      <div className="soft-ghost-button flex h-10 w-10 items-center justify-center rounded-2xl text-sm">
+                        ↗
+                      </div>
+                    </div>
 
-              <div className="min-h-[320px] rounded-[24px] border border-white/8 bg-[#090d18]/82 p-4">
-                {isLoading ? (
+                    <p className="mt-5 text-4xl font-semibold tracking-[-0.06em] text-[#111827]">
+                      {featuredPrice ? formatRupiah(featuredPrice.total) : formatRupiah(0)}
+                    </p>
+
+                    <div className="mt-5 space-y-3">
+                      <EstimateRow
+                        label="Tarif dasar"
+                        value={formatRupiah(pricingConfig.baseFare)}
+                      />
+                      <EstimateRow
+                        label="Tarif jarak"
+                        value={
+                          featuredPrice
+                            ? `${formatRupiah(featuredPrice.distanceCost)}`
+                            : `${formatRupiah(pricingConfig.distanceRate)}/km`
+                        }
+                      />
+                      <EstimateRow
+                        label="Tarif waktu"
+                        value={
+                          featuredPrice
+                            ? `${formatRupiah(featuredPrice.timeCost)}`
+                            : `${formatRupiah(pricingConfig.timeRate)}/menit`
+                        }
+                      />
+                      <EstimateRow
+                        label="Surge"
+                        value={
+                          featuredPrice
+                            ? `${featuredPrice.surgeMultiplier.toFixed(1)}x`
+                            : `${Number.parseFloat(form.surgeMultiplier || "1").toFixed(1)}x`
+                        }
+                      />
+                    </div>
+                  </section>
+
+                  <section id="result-display" className="soft-panel rounded-[28px] p-5">
+                    <div className="mb-4 flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-[#111827]">Hasil AI Booking</p>
+                        <p className="mt-1 text-xs text-[#8093a8]">
+                          Copy-ready summary untuk admin dan WhatsApp
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={copyResult}
+                        disabled={!result || isLoading}
+                        className="soft-ghost-button rounded-2xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isCopied ? "Copied" : "Copy Result"}
+                      </button>
+                    </div>
+
+                    {savedBooking ? (
+                      <div className="mb-4 rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        <p className="font-semibold">Booking berhasil disimpan</p>
+                        <p className="mt-1">Kode: {savedBooking.id}</p>
+                        <p>Status: {savedBooking.status}</p>
+                        {savedBooking.priceBreakdown ? (
+                          <p className="mt-1">
+                            Estimasi harga: {formatRupiah(savedBooking.priceBreakdown.total)}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    <div className="rounded-[24px] border border-[#d9e5f2] bg-white/86 p-4">
+                      {isLoading ? (
+                        <div className="space-y-3">
+                          {[93, 76, 88, 95, 68, 84].map((width, index) => (
+                            <div
+                              key={`${width}-${index}`}
+                              className="h-3.5 animate-pulse rounded-full bg-[#e8f0fa]"
+                              style={{ width: `${width}%` }}
+                            />
+                          ))}
+                        </div>
+                      ) : error ? (
+                        <p className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                          {error}
+                        </p>
+                      ) : result ? (
+                        <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-[#33465a]">
+                          {result}
+                        </pre>
+                      ) : (
+                        <p className="text-sm leading-7 text-[#5f7388]">
+                          Hasil AI akan muncul di sini setelah form diproses. Tampilan baru ini
+                          hanya mengubah visual presentasi, bukan flow booking.
+                        </p>
+                      )}
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-4 md:grid-cols-3">
+              <OverviewCard label="Total Booking" value={String(summary.total)} tone="blue" />
+              <OverviewCard
+                label="Surge Tertinggi"
+                value="2.0x"
+                tone="yellow"
+                helper="Siap untuk demand tinggi"
+              />
+              <OverviewCard
+                label="Minimum Fare"
+                value={formatRupiah(pricingConfig.minimumFare)}
+                tone="teal"
+                helper="Batas bawah estimasi"
+              />
+            </section>
+
+            <section className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+              <section id="pricing-breakdown" className="soft-panel rounded-[28px] p-5">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-[#111827]">Pricing Breakdown</p>
+                    <p className="mt-1 text-xs text-[#8093a8]">
+                      Breakdown sistem harga yang tampil untuk demo
+                    </p>
+                  </div>
+                  <div className="soft-ghost-button flex h-10 w-10 items-center justify-center rounded-2xl text-sm">
+                    ↘
+                  </div>
+                </div>
+
+                <PriceBreakdownPanel breakdown={featuredPrice} />
+              </section>
+
+              <section id="booking-history" className="soft-panel rounded-[28px] p-5">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-[#111827]">Riwayat Booking Terbaru</p>
+                    <p className="mt-1 text-xs text-[#8093a8]">
+                      Bukti bahwa booking benar-benar tersimpan di backend
+                    </p>
+                  </div>
+                  <span className="soft-chip rounded-2xl px-3 py-2 text-xs font-semibold">
+                    {recentBookings.length} data
+                  </span>
+                </div>
+
+                {isLoadingBookings ? (
                   <div className="space-y-3">
-                    {[93, 76, 88, 95, 68, 84].map((width, index) => (
+                    {[1, 2, 3].map((item) => (
                       <div
-                        key={`${width}-${index}`}
-                        className="h-3.5 animate-pulse rounded-full bg-white/10"
-                        style={{ width: `${width}%` }}
+                        key={item}
+                        className="h-24 animate-pulse rounded-[22px] bg-[#eef4fb]"
                       />
                     ))}
                   </div>
-                ) : error ? (
-                  <p className="rounded-2xl border border-rose-300/12 bg-rose-400/10 p-3 text-sm text-rose-100">
-                    {error}
-                  </p>
-                ) : result ? (
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-soft">
-                    {result}
-                  </pre>
+                ) : recentBookings.length === 0 ? (
+                  <div className="rounded-[24px] border border-dashed border-[#d6e3f2] bg-white/70 p-6">
+                    <p className="text-sm font-semibold text-[#111827]">
+                      Belum ada booking tersimpan
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-[#5f7388]">
+                      Buat satu booking dari form untuk melihat riwayat ini.
+                    </p>
+                  </div>
                 ) : (
-                  <p className="text-sm leading-7 text-dim">
-                    Hasil booking akan muncul di sini setelah form diproses. Tombol dan alur tetap
-                    sama, hanya tampilan visualnya yang mengikuti tema referensi.
-                  </p>
-                )}
-              </div>
-            </section>
+                  <div className="space-y-3">
+                    {recentBookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="rounded-[24px] border border-[#d6e3f2] bg-white/85 px-4 py-4 shadow-[0_12px_24px_rgba(144,169,196,0.08)]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-[#111827]">{booking.nama}</p>
+                            <p className="mt-1 text-xs text-[#8093a8]">
+                              {booking.mobil} | {booking.durasi}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-3 py-1 text-[11px] font-semibold ${statusTone(booking.status)}`}
+                          >
+                            {booking.status}
+                          </span>
+                        </div>
 
-            <section className="glass-panel rounded-[30px] p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">Riwayat Booking Terbaru</p>
-                  <p className="mt-1 text-xs text-dim">Bukti bahwa order benar-benar tersimpan</p>
-                </div>
-                <span className="neon-pill rounded-full px-3 py-1 text-xs text-slate-300">
-                  {recentBookings.length} data
-                </span>
-              </div>
-
-              {isLoadingBookings ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((item) => (
-                    <div key={item} className="h-20 animate-pulse rounded-2xl bg-white/[0.04]" />
-                  ))}
-                </div>
-              ) : recentBookings.length === 0 ? (
-                <p className="text-sm leading-7 text-dim">
-                  Belum ada booking tersimpan. Buat satu booking dari form untuk melihat riwayat ini.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {recentBookings.map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-white">{booking.nama}</p>
-                          <p className="mt-1 text-xs text-dim">
-                            {booking.mobil} | {booking.durasi}
+                        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                          <div>
+                            <p className="text-sm text-[#33465a]">
+                              {booking.lokasiJemput} ke {booking.tujuan}
+                            </p>
+                            <p className="mt-2 text-xs text-[#8093a8]">
+                              {booking.id} | {formatBookingTime(booking.createdAt)}
+                            </p>
+                          </div>
+                          <p className="text-base font-semibold text-[#111827]">
+                            {booking.priceBreakdown
+                              ? formatRupiah(booking.priceBreakdown.total)
+                              : "Kalkulasi belum tersedia"}
                           </p>
                         </div>
-                        <span className={`rounded-full px-3 py-1 text-[11px] ${statusTone(booking.status)}`}>
-                          {booking.status}
-                        </span>
                       </div>
-                      <p className="mt-2 text-sm text-soft">
-                        {booking.lokasiJemput} ke {booking.tujuan}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-sky-100">
-                        {booking.priceBreakdown
-                          ? formatRupiah(booking.priceBreakdown.total)
-                          : "Kalkulasi belum tersedia"}
-                      </p>
-                      <p className="mt-2 text-xs text-dim">
-                        {booking.id} | {formatBookingTime(booking.createdAt)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </section>
             </section>
-          </div>
-        </section>
+          </main>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function ConfigChip({ label }: { label: string }) {
+  return <span className="soft-chip rounded-2xl px-3 py-2 text-sm font-medium">{label}</span>;
+}
+
+function SidebarBookingCard({
+  title,
+  subtitle,
+  accent,
+}: {
+  title: string;
+  subtitle: string;
+  accent: string;
+}) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.04] px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-dim">{label}</p>
-      <p className="mt-2 text-2xl font-black text-white">{value}</p>
+    <div className={`rounded-[24px] border border-[#d7e3f1] bg-gradient-to-br ${accent} p-4`}>
+      <div className="rounded-[20px] border border-white/80 bg-white/92 px-4 py-6 shadow-[0_10px_24px_rgba(153,174,198,0.08)]">
+        <div className="mx-auto h-10 max-w-[160px] rounded-[999px] bg-[radial-gradient(circle_at_center,_#dde7f4,_#b7c6d9)]" />
+        <p className="mt-4 text-sm font-semibold text-[#111827]">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-[#6c8095]">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="rounded-[22px] border border-[#d7e3f1] bg-white/88 px-4 py-4 shadow-[0_10px_24px_rgba(153,174,198,0.08)]">
+      <p className="text-xs uppercase tracking-[0.16em] text-[#8a9cb0]">{label}</p>
+      <p
+        className={`mt-2 text-2xl font-semibold tracking-[-0.05em] ${
+          highlight ? "text-[#111827]" : "text-[#243548]"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function EstimateRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-[20px] border border-[#dde7f3] bg-[#fbfdff] px-4 py-3">
+      <span className="text-sm text-[#63778d]">{label}</span>
+      <span className="text-sm font-semibold text-[#111827]">{value}</span>
+    </div>
+  );
+}
+
+function OverviewCard({
+  label,
+  value,
+  tone,
+  helper,
+}: {
+  label: string;
+  value: string;
+  tone: "blue" | "yellow" | "teal";
+  helper?: string;
+}) {
+  const toneClass =
+    tone === "yellow"
+      ? "bg-[linear-gradient(135deg,#ffffff,#fffce3)]"
+      : tone === "teal"
+        ? "bg-[linear-gradient(135deg,#ffffff,#ecfcff)]"
+        : "bg-[linear-gradient(135deg,#ffffff,#eef5ff)]";
+
+  return (
+    <div
+      className={`rounded-[28px] border border-[#d6e3f2] ${toneClass} px-5 py-5 shadow-[0_14px_28px_rgba(144,169,196,0.08)]`}
+    >
+      <p className="text-xs uppercase tracking-[0.18em] text-[#8a9cb0]">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[#111827]">{value}</p>
+      <p className="mt-2 text-sm text-[#65788d]">{helper ?? "Realtime dari sistem booking"}</p>
+    </div>
+  );
+}
+
+function PriceBreakdownPanel({
+  breakdown,
+}: {
+  breakdown: StoredBooking["priceBreakdown"] | null;
+}) {
+  if (!breakdown) {
+    return (
+      <div className="rounded-[24px] border border-dashed border-[#d6e3f2] bg-white/70 p-6">
+        <p className="text-sm font-semibold text-[#111827]">Belum ada kalkulasi aktif</p>
+        <p className="mt-2 text-sm leading-7 text-[#5f7388]">
+          Isi jarak, durasi, dan surge di form untuk melihat breakdown harga di sini.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <EstimateRow label="Tarif dasar" value={formatRupiah(breakdown.baseFare)} />
+      <EstimateRow
+        label={`Biaya jarak (${breakdown.distanceKm} km)`}
+        value={formatRupiah(breakdown.distanceCost)}
+      />
+      <EstimateRow
+        label={`Biaya waktu (${breakdown.timeMinutes} menit)`}
+        value={formatRupiah(breakdown.timeCost)}
+      />
+      <EstimateRow label="Subtotal" value={formatRupiah(breakdown.subtotal)} />
+      <EstimateRow label="Surge" value={`${breakdown.surgeMultiplier.toFixed(1)}x`} />
+      <EstimateRow label="Kenaikan surge" value={formatRupiah(breakdown.surgeAmount)} />
+      <EstimateRow
+        label="Minimum fare"
+        value={
+          breakdown.minimumApplied
+            ? `${formatRupiah(breakdown.minimumFare)} dipakai`
+            : formatRupiah(breakdown.minimumFare)
+        }
+      />
+
+      <div className="rounded-[24px] border border-[#d6e3f2] bg-[#111317] px-4 py-4 text-white shadow-[0_16px_30px_rgba(17,19,23,0.18)]">
+        <p className="text-xs uppercase tracking-[0.18em] text-white/60">Total akhir</p>
+        <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">
+          {formatRupiah(breakdown.total)}
+        </p>
+      </div>
     </div>
   );
 }
@@ -577,14 +943,14 @@ function InputField({
   min,
 }: InputFieldProps) {
   return (
-    <label className="flex flex-col gap-2 text-sm text-slate-200">
+    <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
       {label}
       <input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="neon-input h-12 rounded-2xl px-4 text-sm"
+        className="soft-input h-12 rounded-2xl px-4 text-sm"
         step={step}
         min={min}
       />
@@ -592,66 +958,58 @@ function InputField({
   );
 }
 
-function PriceBreakdownCard({ booking }: { booking: StoredBooking }) {
-  if (!booking.priceBreakdown) {
-    return null;
-  }
-
-  const pricing = booking.priceBreakdown;
-
+function CarShowcase() {
   return (
-    <div className="mb-4 rounded-[24px] border border-sky-300/12 bg-sky-400/10 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-white">Kalkulasi Harga Sewa</p>
-          <p className="mt-1 text-xs text-slate-300">
-            Estimasi sistem sebelum dikirim ke pelanggan
-          </p>
-        </div>
-        <p className="text-lg font-black text-sky-100">{formatRupiah(pricing.total)}</p>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <PriceLine label="Tarif dasar" value={formatRupiah(pricing.baseFare)} />
-        <PriceLine
-          label={`Jarak (${pricing.distanceKm} km)`}
-          value={formatRupiah(pricing.distanceCost)}
-        />
-        <PriceLine
-          label={`Waktu (${pricing.timeMinutes} menit)`}
-          value={formatRupiah(pricing.timeCost)}
-        />
-        <PriceLine label="Subtotal" value={formatRupiah(pricing.subtotal)} />
-        <PriceLine label="Surge" value={`${pricing.surgeMultiplier.toFixed(1)}x`} />
-        <PriceLine label="Kenaikan surge" value={formatRupiah(pricing.surgeAmount)} />
-        <PriceLine
-          label="Minimum fare"
-          value={
-            pricing.minimumApplied
-              ? `${formatRupiah(pricing.minimumFare)} dipakai`
-              : formatRupiah(pricing.minimumFare)
-          }
-        />
-        <PriceLine label="Total akhir" value={formatRupiah(pricing.total)} highlight />
-      </div>
-    </div>
-  );
-}
+    <svg
+      viewBox="0 0 860 280"
+      className="mx-auto block w-full max-w-4xl"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="car-body" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f8fbff" />
+          <stop offset="36%" stopColor="#c9d4e1" />
+          <stop offset="78%" stopColor="#8f9dad" />
+          <stop offset="100%" stopColor="#dfe7f0" />
+        </linearGradient>
+        <linearGradient id="car-shadow" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="rgba(104,124,148,0)" />
+          <stop offset="50%" stopColor="rgba(104,124,148,0.22)" />
+          <stop offset="100%" stopColor="rgba(104,124,148,0)" />
+        </linearGradient>
+      </defs>
 
-function PriceLine({
-  label,
-  value,
-  highlight = false,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-dim">{label}</p>
-      <p className={`mt-2 text-sm font-semibold ${highlight ? "text-sky-100" : "text-white"}`}>
-        {value}
-      </p>
-    </div>
+      <ellipse cx="430" cy="232" rx="260" ry="18" fill="url(#car-shadow)" />
+      <path
+        d="M188 168c18-44 70-92 129-104 52-11 165-13 225 0 52 11 114 54 130 104l-34 7H220l-32-7Z"
+        fill="url(#car-body)"
+        stroke="#7c8da1"
+        strokeWidth="4"
+      />
+      <path
+        d="M298 70c35-16 179-18 238-5 36 8 78 38 105 77H248c20-31 27-44 50-72Z"
+        fill="#edf2f7"
+        stroke="#7c8da1"
+        strokeWidth="4"
+      />
+      <path
+        d="M332 83c45-12 129-13 170-6 23 4 52 24 77 57H300c12-17 15-28 32-51Z"
+        fill="#d9e4f0"
+      />
+      <rect x="474" y="112" width="83" height="13" rx="6" fill="#9ca9b8" />
+      <rect x="244" y="133" width="76" height="13" rx="6" fill="#aeb8c4" />
+      <path d="M170 168h518l-16 23H188z" fill="#c4cfdb" />
+      <path d="M385 118h105l-18 48h-94z" fill="#202833" opacity="0.75" />
+      <path d="M273 142h82l-14 24h-90z" fill="#202833" opacity="0.88" />
+      <path d="M608 145h41l-4 20h-39z" fill="#202833" opacity="0.82" />
+      <path d="M679 166h29l-15 25h-22z" fill="#d0d8e1" />
+      <path d="M155 166h44l18 28h-59z" fill="#d0d8e1" />
+      <circle cx="291" cy="200" r="44" fill="#1c2430" />
+      <circle cx="291" cy="200" r="25" fill="#d5dee8" />
+      <circle cx="587" cy="200" r="44" fill="#1c2430" />
+      <circle cx="587" cy="200" r="25" fill="#d5dee8" />
+      <circle cx="291" cy="200" r="10" fill="#7f8c9b" />
+      <circle cx="587" cy="200" r="10" fill="#7f8c9b" />
+    </svg>
   );
 }
