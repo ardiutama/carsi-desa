@@ -217,7 +217,7 @@ export default function Home() {
 
           <div className="flex flex-wrap gap-2">
             <a
-              href="#hero-booking"
+              href="#form-booking"
               className="soft-dark-button rounded-2xl px-4 py-2 text-sm font-semibold"
             >
               Rent
@@ -261,9 +261,175 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="mt-5 grid gap-5 xl:grid-cols-[360px_1fr]">
-          <aside className="space-y-5">
-            <section className="soft-panel rounded-[30px] p-4">
+        <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <aside className="flex flex-col gap-5 xl:order-2">
+            <section
+              id="form-booking"
+              className="order-1 soft-panel-strong rounded-[30px] p-5 xl:sticky xl:top-5"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#7b8fa6]">
+                    Input Area
+                  </p>
+                  <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#111827]">
+                    Form Booking
+                  </h2>
+                  <p className="mt-2 text-sm text-[#6f8196]">
+                    Mulai dari sini untuk booking. Field paling penting saya taruh di atas agar
+                    alurnya terasa lebih natural.
+                  </p>
+                </div>
+                <span className="soft-chip rounded-2xl px-3 py-2 text-xs font-semibold">
+                  Booking + AI
+                </span>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-3">
+                  <InputField
+                    label="Nama Pelanggan"
+                    value={form.nama}
+                    onChange={(value) => setForm((prev) => ({ ...prev, nama: value }))}
+                    placeholder="Contoh: Pak Rahmat"
+                  />
+                  <InputField
+                    label="Nomor WhatsApp"
+                    value={form.whatsapp}
+                    onChange={(value) => setForm((prev) => ({ ...prev, whatsapp: value }))}
+                    placeholder="08xxxxxxxxxx"
+                  />
+                  <InputField
+                    label="Lokasi Jemput"
+                    value={form.lokasiJemput}
+                    onChange={(value) => setForm((prev) => ({ ...prev, lokasiJemput: value }))}
+                    placeholder="Sidemen"
+                  />
+                  <InputField
+                    label="Tujuan"
+                    value={form.tujuan}
+                    onChange={(value) => setForm((prev) => ({ ...prev, tujuan: value }))}
+                    placeholder="Denpasar / Ubud"
+                  />
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+                    <InputField
+                      label="Tanggal"
+                      type="date"
+                      value={form.tanggal}
+                      onChange={(value) => setForm((prev) => ({ ...prev, tanggal: value }))}
+                    />
+                    <InputField
+                      label="Jam"
+                      type="time"
+                      value={form.jam}
+                      onChange={(value) => setForm((prev) => ({ ...prev, jam: value }))}
+                    />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+                    <InputField
+                      label="Durasi Sewa"
+                      value={form.durasi}
+                      onChange={(value) => setForm((prev) => ({ ...prev, durasi: value }))}
+                      placeholder="12 jam / 1 hari"
+                    />
+                    <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                      Jenis Mobil
+                      <select
+                        value={form.mobil}
+                        onChange={(event) =>
+                          setForm((prev) => ({ ...prev, mobil: event.target.value }))
+                        }
+                        className="soft-input h-12 rounded-2xl px-4 text-sm"
+                      >
+                        {mobilOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+                    <InputField
+                      label="Jarak Tempuh (km)"
+                      type="number"
+                      value={form.jarakKm}
+                      onChange={(value) => setForm((prev) => ({ ...prev, jarakKm: value }))}
+                      placeholder="Contoh: 25"
+                      min="0"
+                      step="0.1"
+                    />
+                    <InputField
+                      label="Estimasi Waktu (menit)"
+                      type="number"
+                      value={form.estimasiMenit}
+                      onChange={(value) =>
+                        setForm((prev) => ({ ...prev, estimasiMenit: value }))
+                      }
+                      placeholder="Contoh: 45"
+                      min="0"
+                      step="1"
+                    />
+                  </div>
+
+                  <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                    Surge Pricing
+                    <select
+                      value={form.surgeMultiplier}
+                      onChange={(event) =>
+                        setForm((prev) => ({ ...prev, surgeMultiplier: event.target.value }))
+                      }
+                      className="soft-input h-12 rounded-2xl px-4 text-sm"
+                    >
+                      {surgeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
+                    Catatan Tambahan
+                    <textarea
+                      value={form.catatan}
+                      onChange={(event) => setForm((prev) => ({ ...prev, catatan: event.target.value }))}
+                      rows={4}
+                      placeholder="Jumlah penumpang, barang bawaan, kebutuhan khusus"
+                      className="soft-input rounded-2xl px-4 py-3 text-sm"
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-4 flex flex-col gap-3">
+                  <button
+                    type="submit"
+                    disabled={!canSubmit || isLoading}
+                    className="soft-dark-button inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        Menyimpan booking...
+                      </>
+                    ) : (
+                      "Proses Booking"
+                    )}
+                  </button>
+                  <Link
+                    href="/admin"
+                    className="soft-ghost-button inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold"
+                  >
+                    Buka Admin
+                  </Link>
+                </div>
+              </form>
+            </section>
+
+            <section className="order-2 soft-panel rounded-[30px] p-4">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#111827]">Tarif Aktif</p>
@@ -302,156 +468,7 @@ export default function Home() {
               </div>
             </section>
 
-            <form
-              id="form-booking"
-              onSubmit={handleSubmit}
-              className="soft-panel-strong rounded-[30px] p-5"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-[#7b8fa6]">
-                    Input Area
-                  </p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#111827]">
-                    Form Booking
-                  </h2>
-                </div>
-                <span className="soft-chip rounded-2xl px-3 py-2 text-xs font-semibold">
-                  Booking + AI
-                </span>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <InputField
-                  label="Nama Pelanggan"
-                  value={form.nama}
-                  onChange={(value) => setForm((prev) => ({ ...prev, nama: value }))}
-                  placeholder="Contoh: Pak Rahmat"
-                />
-                <InputField
-                  label="Nomor WhatsApp"
-                  value={form.whatsapp}
-                  onChange={(value) => setForm((prev) => ({ ...prev, whatsapp: value }))}
-                  placeholder="08xxxxxxxxxx"
-                />
-                <InputField
-                  label="Lokasi Jemput"
-                  value={form.lokasiJemput}
-                  onChange={(value) => setForm((prev) => ({ ...prev, lokasiJemput: value }))}
-                  placeholder="Sidemen"
-                />
-                <InputField
-                  label="Tujuan"
-                  value={form.tujuan}
-                  onChange={(value) => setForm((prev) => ({ ...prev, tujuan: value }))}
-                  placeholder="Denpasar / Ubud"
-                />
-                <InputField
-                  label="Tanggal"
-                  type="date"
-                  value={form.tanggal}
-                  onChange={(value) => setForm((prev) => ({ ...prev, tanggal: value }))}
-                />
-                <InputField
-                  label="Jam"
-                  type="time"
-                  value={form.jam}
-                  onChange={(value) => setForm((prev) => ({ ...prev, jam: value }))}
-                />
-                <InputField
-                  label="Durasi Sewa"
-                  value={form.durasi}
-                  onChange={(value) => setForm((prev) => ({ ...prev, durasi: value }))}
-                  placeholder="12 jam / 1 hari"
-                />
-                <InputField
-                  label="Jarak Tempuh (km)"
-                  type="number"
-                  value={form.jarakKm}
-                  onChange={(value) => setForm((prev) => ({ ...prev, jarakKm: value }))}
-                  placeholder="Contoh: 25"
-                  min="0"
-                  step="0.1"
-                />
-                <InputField
-                  label="Estimasi Waktu (menit)"
-                  type="number"
-                  value={form.estimasiMenit}
-                  onChange={(value) => setForm((prev) => ({ ...prev, estimasiMenit: value }))}
-                  placeholder="Contoh: 45"
-                  min="0"
-                  step="1"
-                />
-
-                <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
-                  Jenis Mobil
-                  <select
-                    value={form.mobil}
-                    onChange={(event) => setForm((prev) => ({ ...prev, mobil: event.target.value }))}
-                    className="soft-input h-12 rounded-2xl px-4 text-sm"
-                  >
-                    {mobilOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="flex flex-col gap-2 text-sm font-medium text-[#27384d]">
-                  Surge Pricing
-                  <select
-                    value={form.surgeMultiplier}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, surgeMultiplier: event.target.value }))
-                    }
-                    className="soft-input h-12 rounded-2xl px-4 text-sm"
-                  >
-                    {surgeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <label className="mt-3 flex flex-col gap-2 text-sm font-medium text-[#27384d]">
-                Catatan Tambahan
-                <textarea
-                  value={form.catatan}
-                  onChange={(event) => setForm((prev) => ({ ...prev, catatan: event.target.value }))}
-                  rows={4}
-                  placeholder="Jumlah penumpang, barang bawaan, kebutuhan khusus"
-                  className="soft-input rounded-2xl px-4 py-3 text-sm"
-                />
-              </label>
-
-              <div className="mt-4 flex flex-col gap-3">
-                <button
-                  type="submit"
-                  disabled={!canSubmit || isLoading}
-                  className="soft-dark-button inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      Menyimpan booking...
-                    </>
-                  ) : (
-                    "Proses Booking"
-                  )}
-                </button>
-                <Link
-                  href="/admin"
-                  className="soft-ghost-button inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold"
-                >
-                  Buka Admin
-                </Link>
-              </div>
-            </form>
-
-            <section className="soft-panel rounded-[30px] p-4">
+            <section className="order-3 soft-panel rounded-[30px] p-4">
               <div className="mb-3">
                 <p className="text-sm font-semibold text-[#111827]">Recent Requests</p>
                 <p className="mt-1 text-xs text-[#8093a8]">Booking yang baru masuk ke sistem</p>
@@ -493,7 +510,7 @@ export default function Home() {
             </section>
           </aside>
 
-          <main className="space-y-5">
+          <main className="space-y-5 xl:order-1">
             <section id="hero-booking" className="soft-panel-strong rounded-[32px] p-5 md:p-6">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div>
