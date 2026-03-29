@@ -495,22 +495,12 @@ export default function Home() {
                       onChange={(value) => setForm((prev) => ({ ...prev, durasi: value }))}
                       placeholder="12 jam / 1 hari"
                     />
-                    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
-                      Jenis Mobil
-                      <select
-                        value={form.mobil}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, mobil: event.target.value }))
-                        }
-                        className="soft-input h-12 w-full rounded-2xl px-4 text-sm"
-                      >
-                        {mobilOptions.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <SelectField
+                      label="Jenis Mobil"
+                      value={form.mobil}
+                      onChange={(value) => setForm((prev) => ({ ...prev, mobil: value }))}
+                      options={mobilOptions.map((option) => ({ label: option, value: option }))}
+                    />
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
@@ -536,22 +526,15 @@ export default function Home() {
                     />
                   </div>
 
-                  <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
-                    Surge Pricing
-                    <select
-                      value={form.surgeMultiplier}
-                      onChange={(event) =>
-                        setForm((prev) => ({ ...prev, surgeMultiplier: event.target.value }))
-                      }
-                      className="soft-input h-12 w-full rounded-2xl px-4 text-sm"
-                    >
-                      {surgeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <SelectField
+                    label="Surge Pricing"
+                    value={form.surgeMultiplier}
+                    onChange={(value) => setForm((prev) => ({ ...prev, surgeMultiplier: value }))}
+                    options={surgeOptions.map((option) => ({
+                      label: option.label,
+                      value: String(option.value),
+                    }))}
+                  />
 
                   <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
                     Catatan Tambahan
@@ -988,6 +971,16 @@ type InputFieldProps = {
   min?: string;
 };
 
+type SelectFieldProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{
+    label: string;
+    value: string;
+  }>;
+};
+
 function InputField({
   label,
   value,
@@ -1053,6 +1046,44 @@ function InputField({
         ) : null}
       </div>
     </label>
+  );
+}
+
+function SelectField({ label, value, onChange, options }: SelectFieldProps) {
+  return (
+    <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[#27384d]">
+      {label}
+      <div className="relative min-w-0">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="soft-input h-12 w-full appearance-none rounded-2xl px-4 pr-12 text-sm"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#213247]">
+          <ChevronDownGlyph />
+        </span>
+      </div>
+    </label>
+  );
+}
+
+function ChevronDownGlyph() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
+      <path
+        d="m5.5 7.5 4.5 5 4.5-5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
