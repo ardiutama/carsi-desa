@@ -20,7 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${plusJakartaSans.variable} antialiased`}>{children}</body>
+      <body className={`${plusJakartaSans.className} ${plusJakartaSans.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
